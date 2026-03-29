@@ -197,18 +197,19 @@ function ChatPage({ setRoute }) {
     try {
       const res = await fetch(`${API}/chat`, {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        mode: "cors",
+        headers: {"Content-Type": "application/json"},
         body: JSON.stringify({ message: text, mode, history }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if (data.guardrail_triggered) { setGuardRail(data.response || "Guardrail triggered."); setMessages([...newMessages]); }
-      else { setMessages([...newMessages, { role: "assistant", text: data.response || data.message || "No response received." }]); }
-    } catch {
-      setMessages([...newMessages, { role: "assistant", text: "Connection error. Is the backend running?" }]);
+      if (data.guardrail_triggered) {
+        setGuardRail(data.response || "Guardrail triggered.");
+        setMessages([...newMessages]);
+      } else {
+        setMessages([...newMessages, { role: "assistant", text: data.response || data.message || "No response." }]);
+      }
+    } catch(err) {
+      setMessages([...newMessages, { role: "assistant", text: `Error: ${err.message}` }]);
     }
     setLoading(false);
   };
