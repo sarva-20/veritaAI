@@ -1,0 +1,7 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0a0f0f; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1a2e2e; border-radius: 2px; }
+textarea:focus { border-color: #0d9488 !important; }
+button:hover:not(:disabled) { opacity: .85; }
