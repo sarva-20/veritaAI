@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 
 const API = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
   ? "http://localhost:8000"
-  : "https://vertia-ai.onrender.com";
+  : "https://veritaai.onrender.com";
 const CSS = `
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
@@ -169,7 +169,7 @@ function ChatPage({ setRoute }) {
       const pdf_base64 = await toBase64(file);
       const res = await fetch(`${API}/analyze`, {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           "Accept": "application/json"
         },
@@ -197,7 +197,7 @@ function ChatPage({ setRoute }) {
     try {
       const res = await fetch(`${API}/chat`, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text, mode, history }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -208,7 +208,7 @@ function ChatPage({ setRoute }) {
       } else {
         setMessages([...newMessages, { role: "assistant", text: data.response || data.message || "No response." }]);
       }
-    } catch(err) {
+    } catch (err) {
       setMessages([...newMessages, { role: "assistant", text: `Error: ${err.message}` }]);
     }
     setLoading(false);
