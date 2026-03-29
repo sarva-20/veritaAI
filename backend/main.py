@@ -12,16 +12,27 @@ import google.generativeai as genai
 from prompts import PATIENT_SYSTEM_PROMPT, DOCTOR_SYSTEM_PROMPT, PROACTIVE_QUESTIONS_PROMPT
 from guardrails import check_guardrails, check_response_guardrail
 
+from fastapi.responses import JSONResponse
+from fastapi import Request
+
 app = FastAPI(title="Verita API", version="1.0.0")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-    allow_credentials=False,
-    expose_headers=["*"],
-)
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return JSONResponse(
+            content={},
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Accept",
+            }
+        )
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept"
+    return response
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
