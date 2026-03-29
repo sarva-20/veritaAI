@@ -2,89 +2,52 @@ import os
 import json
 import base64
 from dotenv import load_dotenv
-load_dotenv()  # ADD THIS LINE - must be before genai.configure
+load_dotenv()
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import google.generativeai as genai
 
 from prompts import PATIENT_SYSTEM_PROMPT, DOCTOR_SYSTEM_PROMPT, PROACTIVE_QUESTIONS_PROMPT
 from guardrails import check_guardrails, check_response_guardrail
 
-from fastapi.responses import JSONResponse
-from fastapi import Request
-
 app = FastAPI(title="Verita API", version="1.0.0")
 
-@app.middleware("http")
-async def add_cors_headers(request: Request, call_next):
-    if request.method == "OPTIONS":
-        return JSONResponse(
-            content={},
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, Accept",
-            }
-        )
-    response = await call_next(request)
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Accept"
-    return response
-
-from fastapi import Request
-from fastapi.responses import JSONResponse
-
-@app.options("/{rest_of_path:path}")
-async def preflight_handler(request: Request, rest_of_path: str):
-    return JSONResponse(
-        content={},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-        }
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 model = genai.GenerativeModel("gemini-2.5-flash")
 
-# ── Request models ────────────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
     message: str
-    mode: str = "patient"           # "patient" | "doctor"
-    history: list[dict] = []        # [{role, parts}]
+    mode: str = "patient"
+    history: list[dict] = []
 
 class AnalyzeRequest(BaseModel):
     pdf_base64: str
     filename: str
     mode: str = "patient"
 
-
-# ── Health check ──────────────────────────────────────────────────────────────
 @app.get("/")
 def root():
     return {"status": "Verita API running", "version": "1.0.0"}
 
-
-# ── Chat endpoint ─────────────────────────────────────────────────────────────
 @app.post("/chat")
 async def chat(req: ChatRequest):
-    # 1. Guardrail check BEFORE hitting Gemini
     is_safe, reason = check_guardrails(req.message)
     if not is_safe:
-        return {
-            "response": reason,
-            "guardrail_triggered": True,
-            "mode": req.mode
-        }
+        return {"response": reason, "guardrail_triggered": True, "mode": req.mode}
 
-    # 2. Pick system prompt based on mode
     system_prompt = PATIENT_SYSTEM_PROMPT if req.mode == "patient" else DOCTOR_SYSTEM_PROMPT
 
-    # 3. Build chat with system prompt injected as first turn
     chat_session = model.start_chat(
         history=[
             {"role": "user", "parts": [system_prompt]},
@@ -93,44 +56,26 @@ async def chat(req: ChatRequest):
         ]
     )
 
-    # 4. Send message
     response = chat_session.send_message(req.message)
     response_text = response.text
 
-    # 5. Output guardrail — scan response before returning
     is_clean, clean_response = check_response_guardrail(response_text)
     if not is_clean:
-        return {
-            "response": clean_response,
-            "guardrail_triggered": True,
-            "mode": req.mode
-        }
+        return {"response": clean_response, "guardrail_triggered": True, "mode": req.mode}
 
-    return {
-        "response": response_text,
-        "guardrail_triggered": False,
-        "mode": req.mode
-    }
+    return {"response": response_text, "guardrail_triggered": False, "mode": req.mode}
 
-
-# ── Document analysis endpoint ────────────────────────────────────────────────
 @app.post("/analyze")
 async def analyze(req: AnalyzeRequest):
-    # 1. Guardrail on filename (basic sanity)
     is_safe, reason = check_guardrails(req.filename)
     if not is_safe:
         return {"error": reason, "guardrail_triggered": True}
 
-    # 2. Decode PDF and send to Gemini vision
     system_prompt = PATIENT_SYSTEM_PROMPT if req.mode == "patient" else DOCTOR_SYSTEM_PROMPT
 
     analysis_prompt = f"""{system_prompt}
 
-CRITICAL INSTRUCTION FIRST:
-Analyze the attached document to verify it is a legitimate medical document (e.g., lab report, blood test, clinical note). If the document appears to be a generic form of identification (ID card, driver's license, passport, utility bill) and is NOT a medical test or report, you MUST output EXACTLY the following sentence and nothing else:
-"⚠️ This is not a recognized medical document. Please upload a valid medical report or test result."
-
-If it IS a valid medical document, structure your response exactly as:
+Analyze the attached medical document. Structure your response as:
 
 ## Summary
 Brief overview of what this document contains.
@@ -154,20 +99,15 @@ What the patient/clinician should do next.
         ])
         analysis_text = response.text
 
-        # 3. Output guardrail
         is_clean, clean_response = check_response_guardrail(analysis_text)
-        analysis_text = clean_response if is_clean else (
-            "Unable to process this document. Please try again."
-        )
+        analysis_text = clean_response if is_clean else "Unable to process this document. Please try again."
 
-        # 4. Generate proactive doctor questions
         questions = []
         try:
             q_response = model.generate_content(
                 f"{PROACTIVE_QUESTIONS_PROMPT}\n\nDocument analysis:\n{analysis_text}"
             )
             raw = q_response.text.strip()
-            # Strip markdown code fences if present
             if raw.startswith("```"):
                 raw = raw.split("```")[1]
                 if raw.startswith("json"):
@@ -182,24 +122,13 @@ What the patient/clinician should do next.
                 "When should I come back for another test?"
             ]
 
-        return {
-            "analysis": analysis_text,
-            "questions": questions,
-            "mode": req.mode,
-            "guardrail_triggered": False
-        }
+        return {"analysis": analysis_text, "questions": questions, "mode": req.mode, "guardrail_triggered": False}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
-
-# ── Guardrail demo endpoint (for judges) ──────────────────────────────────────
 @app.post("/test-guardrail")
 async def test_guardrail(req: ChatRequest):
-    """
-    Transparent endpoint to demonstrate guardrails working.
-    Returns the guardrail decision + reason without hitting Gemini.
-    """
     is_safe, reason = check_guardrails(req.message)
     return {
         "input": req.message,
