@@ -99,7 +99,11 @@ async def analyze(req: AnalyzeRequest):
 
     analysis_prompt = f"""{system_prompt}
 
-Analyze the attached medical document. Structure your response as:
+CRITICAL INSTRUCTION FIRST:
+Analyze the attached document to verify it is a legitimate medical document (e.g., lab report, blood test, clinical note). If the document appears to be a generic form of identification (ID card, driver's license, passport, utility bill) and is NOT a medical test or report, you MUST output EXACTLY the following sentence and nothing else:
+"⚠️ This is not a recognized medical document. Please upload a valid medical report or test result."
+
+If it IS a valid medical document, structure your response exactly as:
 
 ## Summary
 Brief overview of what this document contains.

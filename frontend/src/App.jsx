@@ -59,7 +59,11 @@ function LandingPage({ setRoute }) {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           <span style={s.logoText}>Verita AI</span>
         </div>
-        <button style={s.primaryBtn} onClick={() => setRoute("login")}>Log In</button>
+        <div style={{display: "flex", gap: "24px", alignItems: "center"}}>
+            <span style={{fontSize: 14, fontWeight: 600, color: "#4b5563", cursor: "pointer"}}>Features</span>
+            <span style={{fontSize: 14, fontWeight: 600, color: "#4b5563", cursor: "pointer"}}>About</span>
+            <button style={s.primaryBtn} onClick={() => setRoute("login")}>Log In</button>
+        </div>
       </header>
       
       <main style={s.heroMain}>
@@ -74,19 +78,36 @@ function LandingPage({ setRoute }) {
 
         <div style={s.featureGrid}>
           <div style={s.featureCard}>
-            <h3 style={s.featureTitle}>👨‍⚕️ Two Modes</h3>
+            <h3 style={s.featureTitle}>
+              <svg style={{marginRight: 8, verticalAlign: "middle"}} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              Two Modes
+            </h3>
             <p style={s.featureDesc}>Toggle between Patient (plain English) and Doctor (clinical ICD-10 precision) at any time.</p>
           </div>
           <div style={s.featureCard}>
-            <h3 style={s.featureTitle}>📄 PDF Analysis</h3>
+            <h3 style={s.featureTitle}>
+              <svg style={{marginRight: 8, verticalAlign: "middle"}} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              PDF Analysis
+            </h3>
             <p style={s.featureDesc}>Upload dense medical reports and receive intelligent breakdowns and tagged standard values.</p>
           </div>
           <div style={s.featureCard}>
-            <h3 style={s.featureTitle}>🛡️ Guardrails</h3>
+            <h3 style={s.featureTitle}>
+              <svg style={{marginRight: 8, verticalAlign: "middle"}} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              Guardrails
+            </h3>
             <p style={s.featureDesc}>Built-in safety protections against prompt injection and out-of-scope interactions.</p>
           </div>
         </div>
       </main>
+      
+      <footer style={{paddingTop: 40, borderTop: "1px solid rgba(0,0,0,0.05)", display: "flex", justifyContent: "space-between", fontSize: 13, color: "#6b7280"}}>
+        <div>© 2026 Verita AI. All rights reserved.</div>
+        <div style={{display: "flex", gap: 16}}>
+          <span style={{cursor: "pointer"}}>Privacy Policy</span>
+          <span style={{cursor: "pointer"}}>Terms of Service</span>
+        </div>
+      </footer>
     </div>
   );
 }

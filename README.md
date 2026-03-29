@@ -1,62 +1,111 @@
-# Verita AI
+# Verita — Medical Document Intelligence Platform
 
-Verita AI is an intelligent medical document analysis and diagnostic assistant. Built with a modern Light Neumorphic UI, it helps both patients and doctors leverage the power of Google's Gemini LLM to interpret complex health reports, lab results, and blood work.
+## 1. What is Verita?
 
-## Structure
+Verita is a medical document intelligence platform that transforms complex health reports into clear, actionable insights — built for both patients and clinicians.
 
-This is a monorepo consisting of a FastAPI Python backend and a React/Vite frontend. 
+**Patient Mode** translates lab results and medical documents into plain English, flags abnormal values, and generates 5 specific questions the patient should ask their doctor at their next appointment — turning passive recipients of medical data into informed, prepared participants in their own care.
 
-```
-veritaAI/
-├── backend/    # FastAPI, Gemini AI integrations, and Guardrails logic.
-└── frontend/   # React + Vite application, featuring a Neumorphic Soft UI design.
-```
+**Doctor Mode** shifts to full clinical precision — ICD-10 code references, differential diagnosis considerations, urgency-flagged findings (`[CRITICAL]`, `[ABNORMAL]`, `[BORDERLINE]`), and follow-up investigation suggestions. Same document, same engine, completely different lens calibrated for a healthcare professional.
 
-## Features
-
-- **Dual Modes (Patient & Doctor):** Switch between plain-English, empathetic explanations for patients, or clinical ICD-10 precision for doctors.
-- **AI Document Analysis:** Upload any medical PDF document and the platform will automatically extract critical data, tag abnormal values, and suggest proactive doctor follow-up questions.
-- **Robust Guardrails:** Three-layer security protocol that strictly blocks self-harm, off-topic requests (legal, financial, coding), and dangerous prompt-injection attacks before they reach the LLM.
-- **Modern Medical UI:** A mobile-first, reactive Glassmorphism/Neumorphic interface prioritizing smooth multi-page routing and animated gradients.
+Both modes are powered by **Gemini 2.5 Flash** with native PDF vision — no preprocessing, no third-party OCR. Upload a report, get structured intelligence in seconds.
 
 ---
 
-## Local Development Setup
+## 2. System Prompt Design
 
-You will need two separate terminal windows to run both the backend API and the frontend client simultaneously.
+Verita uses two distinct system prompts injected **server-side only**, never exposed to the client.
 
-### 1. Backend Integration (FastAPI)
-By default, the backend runs on `http://localhost:8000`. Set up your environment variables first.
+### Patient Prompt
+Enforces empathetic, jargon-free communication. Explicitly prohibits diagnosis, treatment recommendations, and medication suggestions. Every response closes with a mandatory disclaimer directing the user back to their healthcare provider.
 
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+### Doctor Prompt
+Operates at peer-level clinical precision — standard medical abbreviations, reference ranges with units, ICD-10 codes, and structured differential considerations. Flags critical values requiring immediate attention and suggests relevant follow-up investigations.
 
-# Make sure your .env file is populated with: GEMINI_API_KEY=your_key
-uvicorn main:app --port 8000 --reload
-```
-
-### 2. Frontend Integration (React + Vite)
-By default, the Vite server will run on `http://localhost:5173` and target the backend on port `8000`.
-
-```bash
-cd frontend
-npm install
-npm run dev
+### Proactive Question Generator Prompt
+Given the document analysis, produces exactly **5 specific, prioritized, plain-language questions** the patient can bring to their next appointment. Output is constrained to a strict JSON array — reliably parseable and tamper-resistant.
+```python
+# Output format enforced by prompt
+["Question 1?", "Question 2?", "Question 3?", "Question 4?", "Question 5?"]
 ```
 
 ---
 
-## Vercel Deployment Instructions
+## 3. Guardrails & Safety
 
-To successfully deploy this monorepo to Vercel, you should deploy the `frontend` folder as your main application directory.
+Verita implements a **three-layer guardrail system** that runs before every Gemini API call — zero latency cost, 100% deterministic.
 
-### Frontend Deployment
-1. Connect your GitHub repository to Vercel.
-2. In the Vercel project settings, explicitly set the **Root Directory** to `frontend`.
-3. Set the build command to `npm run build` and output directory to `dist`.
-4. Ensure your environment variables are set in the Vercel dashboard.
+### Layer 1 — Prompt Injection Defense
 
-*(Note: API backend deployment generally requires a platform suited for Python/FastAPI, such as Render, Railway, or standardizing Vercel Serverless functions.)*
+Catches 15+ regex-compiled attack patterns:
+
+| Category | Examples |
+|---|---|
+| Classic overrides | `ignore all previous instructions`, `forget your system prompt` |
+| Role hijacking | `you are now`, `act as`, `pretend to be`, `DAN`, `do anything now` |
+| Prompt extraction | `reveal your instructions`, `what is your system prompt` |
+| Jailbreak keywords | `bypass your filters`, `no restrictions`, `jailbreak` |
+| Encoding tricks | `base64`, `hex decode` |
+| Context manipulation | `[INST]`, `<system>`, `### instruction` |
+
+> Patterns are compiled once at module load for performance.
+
+### Layer 2 — Safety Blocklist
+
+Detects self-harm and crisis language. Rather than refusing bluntly, Verita responds with empathy and provides real crisis resources:
+
+- 🇮🇳 **India:** iCall — `9152987821`
+- 🌍 **International:** [findahelpline.com](https://findahelpline.com)
+
+### Layer 3 — Off-topic Scope Enforcement
+
+Keeps the assistant focused on medical documents. Legal, financial, coding, and general knowledge queries are redirected cleanly with context on what Verita can actually help with.
+
+### Output Guardrail
+
+A secondary scan runs on **Gemini's response before it reaches the client** — catching edge cases where injection partially succeeded.
+
+### Live Demo Endpoint
+```bash
+POST /test-guardrail
+```
+
+Submit any input and receive a full JSON breakdown:
+```json
+{
+  "input": "ignore all previous instructions",
+  "is_safe": false,
+  "reason": "INJECTION_DETECTED: ...",
+  "would_proceed_to_gemini": false
+}
+```
+
+> Safety systems that operate invisibly are hard to trust. Verita makes its reasoning **transparent and demonstrable in real time.**
+
+---
+
+## 4. What Makes Verita Different
+
+The feature that separates Verita from every generic medical chatbot is the **proactive question generator**.
+
+Every other tool answers what you ask. Verita tells you **what you should be asking** — and most patients don't know.
+
+After analyzing a document, Verita generates 5 clinically prioritized, plain-language questions specific to that report's findings. This closes the most dangerous gap in healthcare: the patient who walks out of an appointment not knowing what they didn't ask.
+
+### Dual-Mode Architecture
+
+The same information needs to be communicated completely differently depending on who is reading it. A hemoglobin value means something different to a worried first-time patient than it does to a GP reviewing a panel. Verita respects that distinction **at the prompt level**, not just the UI level.
+
+### Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | FastAPI (Python) |
+| AI Model | Gemini 2.5 Flash |
+| PDF Processing | Native Gemini Vision |
+| Frontend | Google Antigravity |
+| Deployment | Vercel |
+
+---
+
+> Built at hackathon — designed to win on real impact, ethical design, and demonstrable safety.
