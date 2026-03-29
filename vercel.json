@@ -13,22 +13,14 @@
       "use": "@vercel/python"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/chat",
-      "destination": "/backend/main.py"
+      "src": "/api/(.*)",
+      "dest": "backend/main.py"
     },
     {
-      "source": "/analyze",
-      "destination": "/backend/main.py"
-    },
-    {
-      "source": "/assets/(.*)",
-      "destination": "/frontend/assets/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/frontend/index.html"
+      "src": "/(.*)",
+      "dest": "frontend/$1"
     }
   ]
 }

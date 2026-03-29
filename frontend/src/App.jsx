@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-const API = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1') ? "http://localhost:8000" : "";
+const API = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1') ? "http://localhost:8000/api" : "/api";
 
 const CSS = `
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
