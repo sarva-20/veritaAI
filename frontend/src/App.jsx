@@ -168,7 +168,12 @@ function ChatPage({ setRoute }) {
     try {
       const pdf_base64 = await toBase64(file);
       const res = await fetch(`${API}/analyze`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        mode: "cors",
         body: JSON.stringify({ pdf_base64, filename: file.name, mode }),
       });
       const data = await res.json();
@@ -191,7 +196,12 @@ function ChatPage({ setRoute }) {
     const history = newMessages.slice(0, -1).map((m) => ({ role: m.role === "user" ? "user" : "model", parts: [m.text] }));
     try {
       const res = await fetch(`${API}/chat`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        mode: "cors",
         body: JSON.stringify({ message: text, mode, history }),
       });
       const data = await res.json();
