@@ -43,7 +43,7 @@ def root():
 
 
 # ── Chat endpoint ─────────────────────────────────────────────────────────────
-@app.post("/api/chat")
+@app.post("/chat")
 async def chat(req: ChatRequest):
     # 1. Guardrail check BEFORE hitting Gemini
     is_safe, reason = check_guardrails(req.message)
@@ -87,7 +87,7 @@ async def chat(req: ChatRequest):
 
 
 # ── Document analysis endpoint ────────────────────────────────────────────────
-@app.post("/api/analyze")
+@app.post("/analyze")
 async def analyze(req: AnalyzeRequest):
     # 1. Guardrail on filename (basic sanity)
     is_safe, reason = check_guardrails(req.filename)

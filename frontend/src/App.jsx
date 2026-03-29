@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 
 const API = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
   ? "http://localhost:8000"
-  : "https://vertia-ai.onrender.com/";
+  : "https://vertia-ai.onrender.com";
 const CSS = `
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
@@ -195,8 +195,8 @@ function ChatPage({ setRoute }) {
         body: JSON.stringify({ message: text, mode, history }),
       });
       const data = await res.json();
-      if (data.guardrail_triggered) { setGuardRail(data.response); setMessages([...newMessages]); }
-      else { setMessages([...newMessages, { role: "assistant", text: data.response }]); }
+      if (data.guardrail_triggered) { setGuardRail(data.response || "Guardrail triggered."); setMessages([...newMessages]); }
+      else { setMessages([...newMessages, { role: "assistant", text: data.response || data.message || "No response received." }]); }
     } catch {
       setMessages([...newMessages, { role: "assistant", text: "Connection error. Is the backend running?" }]);
     }
@@ -266,7 +266,7 @@ function ChatPage({ setRoute }) {
                     {m.role === "user" ? "Me" : "Our AI"}
                   </div>
                   <div style={{ ...s.bubble, ...(m.role === "user" ? s.bubbleUser : s.bubbleBot) }}>
-                    {formatMessage(m.text)}
+                    {formatMessage(m.text) || m.text}
                   </div>
                 </div>
               </div>
